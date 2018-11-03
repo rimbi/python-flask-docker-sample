@@ -5,7 +5,7 @@ from flask import request
 from flask_restful import Resource, Api
 from model import create_db
 from model import db
-from model import User
+from model import Exchange
 from model import app as application
 import simplejson as json
 from sqlalchemy.exc import IntegrityError
@@ -16,51 +16,57 @@ app = Flask(__name__)
 api = Api(app)
 
 
-class UserResource(Resource):
-    def get(self, username):
-        # return json.dumps({'username':request.args['username']})
+class ExchangeResource(Resource):
+    def get(self, currency):
         try:
-            user = User.query.filter_by(username=username).first_or_404()
-            return json.dumps(
-                {user.username: {'email': user.email, 'phone': user.phone, 'fax': user.fax}})
+            exchanges = Exchange.query.filter_by(currency=currency).first_or_404()
+            exchanges_dict = {}
+            for exchange in exchanges:
+                exchanges_dict[exchange.id] = {
+                    'currency': exchange.currency,
+                    'amount': exchange.amount,
+                    'price': exchange.price,
+                    'final_amount': exchange.final_amount
+                }
+    
+            return json.dumps(exchanges_dict)
         except IntegrityError:
             return json.dumps({})
 
 
-class UserListResource(Resource):
+class ExchangeListResource(Resource):
     def get(self):
         try:
-            users = User.query.all()
-            users_dict = {}
-            for user in users:
-                users_dict[user.username] = {
-                    'email': user.email,
-                    'phone': user.phone,
-                    'fax': user.fax
+            exchanges = Exchange.query.all()
+            exchanges_dict = {}
+            for exchange in exchanges:
+                exchanges_dict[exchange.id] = {
+                    'currency': exchange.currency,
+                    'amount': exchange.amount,
+                    'price': exchange.price,
+                    'final_amount': exchange.final_amount
                 }
     
-            return json.dumps(users_dict)
+            return json.dumps(exchanges_dict)
         except IntegrityError:
             return json.dumps({})
 
     def post(self):
         try:
-            import sys
-            print('Deneme', file=sys.stderr)
             data = request.get_json(force=True)
-            user = User(data['username'],
-                        data['email'],
-                        data['phone'],
-                        data['fax'])
-            db.session.add(user)
+            exchange = Exchange(data['currency'],
+                            data['amount'],
+                            data['price'],
+                            data['final_amount'])
+            db.session.add(exchange)
             db.session.commit()
             return json.dumps({'status': True})
         except IntegrityError:
             return json.dumps({'status': False})
 
 
-api.add_resource(UserListResource, '/users')
-api.add_resource(UserResource, '/users/<username>')
+api.add_resource(ExchangeListResource, '/exchanges')
+api.add_resource(ExchangeResource, '/exchanges/<currency>')
 
 
 def create_tables():

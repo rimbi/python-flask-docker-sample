@@ -22,24 +22,24 @@ manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
 
-class User(db.Model):
+class Exchange(db.Model):
 
     # Data Model User Table
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=False)
-    email = db.Column(db.String(120), unique=True)
-    phone = db.Column(db.String(120), unique=True)
-    fax = db.Column(db.String(120), unique=False)
+    currency = db.Column(db.String(20), unique=False)
+    amount = db.Column(db.Float(precision=8), unique=False)
+    price = db.Column(db.Float(precision=8), unique=False)
+    final_amount = db.Column(db.Float(precision=8), unique=False)
 
-    def __init__(self, username, email, phone, fax):
+    def __init__(self, currency, amount, price, final_amount):
         # initialize columns
-        self.username = username
-        self.email = email
-        self.phone = phone
-        self.fax = fax
+        self.currency = currency
+        self.amount = amount
+        self.price = price
+        self.final_amount = final_amount
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return '<Exchange %r>' % self.currency
 
 
 def create_db():

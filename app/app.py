@@ -17,60 +17,15 @@ app = Flask(__name__)
 api = Api(app)
 
 
-class LastExchange(Resource):
-    def get(self, currency=None):
-        """
-        Returns last  exchange
-        """
-        try:
-            exchange = Exchange.query.order_by(
-                Exchange.id.desc()).first_or_404()
-            # exchanges = Exchange.query.filter_by(currency=currency).first_or_404()
-            exchanges_dict = {}
-            # for exchange in exchanges:
-            exchanges_dict[exchange.id] = {
-                'currency': exchange.currency,
-                'amount': exchange.amount,
-                'price': exchange.price,
-                'final_amount': exchange.final_amount
-            }
-
-            return json.dumps(exchanges_dict)
-        except IntegrityError:
-            return json.dumps({})
-
-
-class LastExchangeByCurrency(Resource):
-    def get(self, currency):
-        """
-        Returns last  exchanges of the <currency>
-        """
-        try:
-            exchange = Exchange.query.filter_by(
-                currency=currency).order_by(
-                Exchange.id.desc()).first_or_404()
-            # exchanges = Exchange.query.filter_by(currency=currency).first_or_404()
-            exchanges_dict = {}
-            # for exchange in exchanges:
-            exchanges_dict[exchange.id] = {
-                'currency': exchange.currency,
-                'amount': exchange.amount,
-                'price': exchange.price,
-                'final_amount': exchange.final_amount
-            }
-
-            return json.dumps(exchanges_dict)
-        except IntegrityError:
-            return json.dumps({})
-
-
-class LastNExchanges(Resource):
-    def get(self, n):
+class LastExchanges(Resource):
+    def get(self):
         """
         Returns last <n> operations
         """
         try:
-            exchanges = Exchange.query.order_by(Exchange.id.desc()).limit(n)
+            exchanges = self.modify_query(
+                Exchange.query.order_by(
+                    Exchange.id.desc()))
             # exchanges = Exchange.query.filter_by(currency=currency).first_or_404()
             exchanges_dict = {}
             # for exchange in exchanges:
@@ -86,30 +41,54 @@ class LastNExchanges(Resource):
         except IntegrityError:
             return json.dumps({})
 
+    def modify_query(self, query):
+        return query
 
-class LastNExchangesByCurrency(Resource):
+
+class LastNExchanges(LastExchanges):
+    def get(self, n):
+        """
+        Returns last <n> operations
+        """
+        self.n = n
+        return super(LastNExchanges, self).get()
+
+    def modify_query(self, query):
+        return query.limit(self.n)
+
+
+class LastExchange(LastNExchanges):
+    def get(self):
+        """
+        Returns last  exchange
+        """
+        return super(LastExchange, self).get(1)
+
+
+class LastExchangeByCurrency(LastExchange):
+    def get(self, currency):
+        """
+        Returns last  exchanges of the <currency>
+        """
+        self.currency = currency
+        return super(LastExchangeByCurrency, self).get()
+
+    def modify_query(self, query):
+        query = query.filter_by(currency=self.currency)
+        return super(LastExchangeByCurrency, self).modify_query(query)
+
+
+class LastNExchangesByCurrency(LastNExchanges):
     def get(self, currency, n):
         """
-        Returns last <n> operations for the <currency>
+        Returns last <n> operations
         """
-        try:
-            exchanges = Exchange.query.filter_by(
-                currency=currency).order_by(
-                Exchange.id.desc()).limit(n)
-            # exchanges = Exchange.query.filter_by(currency=currency).first_or_404()
-            exchanges_dict = {}
-            # for exchange in exchanges:
-            for exchange in exchanges:
-                exchanges_dict[exchange.id] = {
-                    'currency': exchange.currency,
-                    'amount': exchange.amount,
-                    'price': exchange.price,
-                    'final_amount': exchange.final_amount
-                }
+        self.currency = currency
+        return super(LastNExchangesByCurrency, self).get(n)
 
-            return json.dumps(exchanges_dict)
-        except IntegrityError:
-            return json.dumps({})
+    def modify_query(self, query):
+        query = query.filter_by(currency=self.currency)
+        return super(LastNExchangesByCurrency, self).modify_query(query)
 
 
 class ExchangeList(Resource):
@@ -163,7 +142,7 @@ class ExchangeList(Resource):
             return json.dumps({'status': False})
 
 
-api.add_resource(ExchangeListResource, '/grab_and_save')
+api.add_resource(ExchangeList, '/grab_and_save')
 api.add_resource(LastExchange, '/last')
 api.add_resource(LastExchangeByCurrency, '/last/<string:currency>')
 api.add_resource(LastNExchanges, '/last/<int:n>')

@@ -45,15 +45,6 @@ def insert_user():
         return json.dumps({'status': False})
 
 
-@app.route('/createtbl')
-def createUserTable():
-    try:
-        db.create_all()
-        return json.dumps({'status': True})
-    except IntegrityError:
-        return json.dumps({'status': False})
-
-
 @app.route('/users')
 def users():
     try:
@@ -77,9 +68,21 @@ def app_status():
         {'server_info': application.config['SQLALCHEMY_DATABASE_URI']})
 
 
+def create_tables():
+    """
+    Create tables on the db
+    """
+    try:
+        db.create_all()
+        return True
+    except IntegrityError:
+        return False
+
+
 # run app service
 if __name__ == "__main__":
     import time
     time.sleep(5)
     create_db()
+    create_tables()
     app.run(host="0.0.0.0", port=8082, debug=True)

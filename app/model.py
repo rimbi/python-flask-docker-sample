@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
+import sqlalchemy as sa
 
 
 # Database Configurations
@@ -27,9 +28,9 @@ class Exchange(db.Model):
     # Data Model User Table
     id = db.Column(db.Integer, primary_key=True)
     currency = db.Column(db.String(20), unique=False)
-    amount = db.Column(db.Float(precision=8), unique=False)
-    price = db.Column(db.Float(precision=8), unique=False)
-    final_amount = db.Column(db.Float(precision=8), unique=False)
+    amount = db.Column(sa.types.Float(precision=2, scale=8), unique=False)
+    price = db.Column(sa.types.Float(precision=2, scale=8), unique=False)
+    final_amount = db.Column(sa.types.Float(precision=2, scale=8), unique=False)
 
     def __init__(self, currency, amount, price, final_amount):
         # initialize columns

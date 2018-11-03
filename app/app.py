@@ -1,5 +1,8 @@
+from __future__ import print_function
 from flask import Flask
 from flask import request
+from flask import request
+from flask_restful import Resource, Api
 from model import create_db
 from model import db
 from model import User
@@ -10,62 +13,54 @@ import os
 
 # initate flask app
 app = Flask(__name__)
+api = Api(app)
 
 
-@app.route('/')
-def index():
-    return 'Hello World! Docker-Compose for Flask & Mysql\n'
+class UserResource(Resource):
+    def get(self, username):
+        # return json.dumps({'username':request.args['username']})
+        try:
+            user = User.query.filter_by(username=username).first_or_404()
+            return json.dumps(
+                {user.username: {'email': user.email, 'phone': user.phone, 'fax': user.fax}})
+        except IntegrityError:
+            return json.dumps({})
 
 
-@app.route('/user')
-def show_user():
-    # return json.dumps({'username':request.args['username']})
-    try:
-        user = User.query.filter_by(
-            username=request.args['username']).first_or_404()
-        return json.dumps(
-            {user.username: {'email': user.email, 'phone': user.phone, 'fax': user.fax}})
-    except IntegrityError:
-        return json.dumps({})
+class UserListResource(Resource):
+    def get(self):
+        try:
+            users = User.query.all()
+            users_dict = {}
+            for user in users:
+                users_dict[user.username] = {
+                    'email': user.email,
+                    'phone': user.phone,
+                    'fax': user.fax
+                }
+    
+            return json.dumps(users_dict)
+        except IntegrityError:
+            return json.dumps({})
 
-# http://localhost/
-
-
-@app.route('/insert')
-def insert_user():
-    try:
-        user = User(request.args['username'],
-                    request.args['email'],
-                    request.args['phone'],
-                    request.args['fax'])
-        db.session.add(user)
-        db.session.commit()
-        return json.dumps({'status': True})
-    except IntegrityError:
-        return json.dumps({'status': False})
-
-
-@app.route('/users')
-def users():
-    try:
-        users = User.query.all()
-        users_dict = {}
-        for user in users:
-            users_dict[user.username] = {
-                'email': user.email,
-                'phone': user.phone,
-                'fax': user.fax
-            }
-
-        return json.dumps(users_dict)
-    except IntegrityError:
-        return json.dumps({})
+    def post(self):
+        try:
+            import sys
+            print('Deneme', file=sys.stderr)
+            data = request.get_json(force=True)
+            user = User(data['username'],
+                        data['email'],
+                        data['phone'],
+                        data['fax'])
+            db.session.add(user)
+            db.session.commit()
+            return json.dumps({'status': True})
+        except IntegrityError:
+            return json.dumps({'status': False})
 
 
-@app.route('/info')
-def app_status():
-    return json.dumps(
-        {'server_info': application.config['SQLALCHEMY_DATABASE_URI']})
+api.add_resource(UserListResource, '/users')
+api.add_resource(UserResource, '/users/<username>')
 
 
 def create_tables():
